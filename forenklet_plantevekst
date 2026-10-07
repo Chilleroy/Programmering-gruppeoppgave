@@ -1,0 +1,67 @@
+import csv
+import datetime
+
+fila = "programmering_gruppeoppgave/sinnes_2014_2025_med_makstemperatur.csv"
+
+def les_temperaturer(filnavn, aar):
+    resultat = []
+    try:
+        with open(filnavn, "r", encoding="utf-8-sig") as f:
+            leser = csv.reader(f, delimiter=";")
+
+            try:
+                header = next(leser)
+            except StopIteration:
+                print("Fila er tom eller mangler header.")
+                return resultat
+
+            try:
+                dato_idx = header.index("Tid(norsk normaltid)")
+                temp_idx = header.index("Middeltemperatur (døgn)")
+            except ValueError:
+                print("Fila har ikke forventet format (mangler forventede kolonner).")
+                return resultat
+
+            for rad in leser:
+                try:
+                    dato = datetime.datetime.strptime(rad[dato_idx], "%d.%m.%Y")
+                    temp = float(rad[temp_idx].replace(",", "."))
+                except ValueError:
+                    continue  # manglende verdi ("-") eller bunntekst
+                except IndexError:
+                    continue
+
+                if dato.year == aar:
+                    resultat.append((dato, temp))
+
+    except FileNotFoundError:
+        print("Fant ikke fila!")
+    except IOError:
+        print("Feil under lesing av fila!")
+    return resultat
+
+def plantevekst(temperaturer):
+    total = 0
+    for temp in temperaturer:
+        if temp >= 5:
+            total += temp - 5
+    return total
+
+def main():
+    try:
+        valgt_aar = int(input("For hvilket år vil du finne planteveksten?: "))
+    except ValueError:
+        print("Feil format! Skriv inn et årstall, f.eks 2019.")
+        return
+
+    data = les_temperaturer(fila, valgt_aar)
+
+    if len(data) == 0:
+        print(f"Fant ingen temperaturdata for {valgt_aar}. Sjekk at året er mellom 2014 og 2025")
+        return
+
+    temperaturer = [temp for dato, temp in data]
+    total = plantevekst(temperaturer)
+    print(f"Total plantevekst i {valgt_aar}: {total:.1f} (basert på {len(data)} dager med data)")
+
+main()
